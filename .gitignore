@@ -1,0 +1,84 @@
+# =========================
+# Python
+# =========================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+env/
+ragenv/
+.venv/
+
+# Environment Variables
+.env
+
+# =========================
+# IDE
+# =========================
+
+.vscode/
+.idea/
+
+# =========================
+# OS Files
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+# Python Build Files
+# =========================
+
+build/
+dist/
+*.egg-info/
+
+# =========================
+# Logs
+# =========================
+
+*.log
+
+# =========================
+# ChromaDB
+# =========================
+
+data/chroma_db/
+chroma_db/
+
+# =========================
+# Uploaded PDFs
+# =========================
+
+data/policies/
+
+# Keep folder structure
+!data/
+!data/.gitkeep
+
+
+
+# =========================
+# Jupyter
+# =========================
+
+.ipynb_checkpoints/
+
+# =========================
+# Coverage
+# =========================
+
+.coverage
+htmlcov/
+
+# =========================
+# Secrets
+# =========================
+
+secrets.json
+credentials.json
+rag_guide.ipynb
