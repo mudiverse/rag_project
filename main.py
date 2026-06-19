@@ -1,12 +1,11 @@
 import sys
-import time
 import os
 import logging
 import httpx
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 
 from ingestion.ingest_pipeline import ingest_document
 from query.query_pipeline import ask_question
@@ -133,67 +132,5 @@ async def delete_rag_document(documentId: str):
         logger.error(f"Delete operation failed for documentId {documentId}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
 
-
-def run_test_suite():
-    print("\n" + "="*70)
-    print("            RAG PIPELINE UPGRADE DEMONSTRATION RUN")
-    print("="*70)
-    
-    policy1_path = "data/policies/policy1.pdf"
-    policy2_path = "data/policies/policy2.pdf"
-    
-    # 1. Connect to Chroma and check existing chunks
-    try:
-        db = get_vectorstore()
-        stored = db.get()
-        num_docs = len(stored.get("ids", []))
-        print(f"\n[MAIN] Connected to Chroma DB. Current database contains {num_docs} chunks.")
-    except Exception as e:
-        print(f"[MAIN] [ERROR] Failed to query database: {e}")
-        logger.error(f"Failed to query database: {e}", exc_info=True)
-        return
-
-    # 2. Automatically ingest documents if store is empty
-    if num_docs == 0:
-        print("\n[MAIN] Database is empty! Running ingestion for policies...")
-        try:
-            ingest_document(policy1_path)
-            ingest_document(policy2_path)
-            stored = db.get()
-            num_docs = len(stored.get("ids", []))
-            print(f"[MAIN] Ingestion complete. Database now has {num_docs} chunks.")
-        except Exception as e:
-            print(f"[MAIN] [ERROR] Ingestion failed: {e}")
-            return
-    else:
-        print("\n[MAIN] Using existing documents indexed in database.")
-        print("[MAIN] Hint: To re-ingest clean datasets, delete the folder 'data/chroma_db'.")
-
-    # 3. Test queries
-    test_query = "Can we Migrate the policy to other insurance?"
-
-    # --- TEST 2: Retrieval WITH Metadata Filter (Restricted to policy1) ---
-    print("\n" + "="*60)
-    print("TEST 2: Query WITH Filter (pdf_id = 'policy1')")
-    print("="*60)
-    filtered_query_p1 = {
-        "question": test_query,
-        "filter": {"pdf_id": "policy1"}
-    }
-    print(f"Query: '{test_query}' | Filter: pdf_id='policy1'\n")
-    
-    response = ask_question(filtered_query_p1)
-    print("\nResponse:")
-    for chunk in response:
-        sys.stdout.write(chunk)
-        sys.stdout.flush()
-        time.sleep(0.01)
-    print("\n")
-
-
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--test":
-        run_test_suite()
-    else:
-        print("[API] Starting FastAPI application on http://localhost:8000")
-        uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
