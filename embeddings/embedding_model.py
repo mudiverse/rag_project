@@ -1,5 +1,5 @@
 import logging
-from langchain_google_genai import GoogleGenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from config import GEMINI_API_KEY
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ def get_embedding_model():
             if not GEMINI_API_KEY:
                 raise ValueError("GEMINI_API_KEY is not defined in the environment variables.")
             
-            _embedding_model = GoogleGenAIEmbeddings(
+            _embedding_model = GoogleGenerativeAIEmbeddings(
                 model="models/text-embedding-004",
                 google_api_key=GEMINI_API_KEY
             )
