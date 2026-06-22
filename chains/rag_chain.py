@@ -8,28 +8,34 @@ from langchain_core.output_parsers import StrOutputParser
 
 logger = logging.getLogger(__name__)
 
-# Initialize Google Gemini LLM with API validation
-try:
-    if not GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY is not defined in the environment variables.")
-    print("[CHAIN] Initializing Gemini LLM (gemini-2.5-flash)...")
-    logger.info("Initializing Google Gemini API connection.")
-    llm_model = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        temperature=0.0,  # Factual temperature for RAG
-        google_api_key=GEMINI_API_KEY
-    )
-except Exception as e:
-    print(f"[CHAIN] [ERROR] Failed to initialize Gemini LLM: {e}")
-    logger.critical(f"Critical error initializing LLM: {e}", exc_info=True)
-    # Fallback to prevent app crashes, yields error
-    class FallbackLLM:
-        def stream(self, prompt, **kwargs):
-            yield f"[LLM ERROR: Gemini API key or connection failed. Details: {e}]"
-        def invoke(self, prompt, **kwargs):
-            from langchain_core.outputs import ChatResult, ChatGeneration, AIMessage
-            return AIMessage(content=f"[LLM ERROR: Gemini API key or connection failed. Details: {e}]")
-    llm_model = FallbackLLM()
+# Lazy-load Google Gemini LLM
+llm_model = None
+
+def get_llm():
+    global llm_model
+    if llm_model is None:
+        try:
+            if not GEMINI_API_KEY:
+                raise ValueError("GEMINI_API_KEY is not defined in the environment variables.")
+            print("[CHAIN] Initializing Gemini LLM (gemini-2.5-flash)...")
+            logger.info("Initializing Google Gemini API connection.")
+            llm_model = ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
+                temperature=0.0,  # Factual temperature for RAG
+                google_api_key=GEMINI_API_KEY
+            )
+        except Exception as e:
+            print(f"[CHAIN] [ERROR] Failed to initialize Gemini LLM: {e}")
+            logger.critical(f"Critical error initializing LLM: {e}", exc_info=True)
+            # Fallback to prevent app crashes, yields error
+            class FallbackLLM:
+                def stream(self, prompt, **kwargs):
+                    yield f"[LLM ERROR: Gemini API key or connection failed. Details: {e}]"
+                def invoke(self, prompt, **kwargs):
+                    from langchain_core.outputs import ChatResult, ChatGeneration, AIMessage
+                    return AIMessage(content=f"[LLM ERROR: Gemini API key or connection failed. Details: {e}]")
+            llm_model = FallbackLLM()
+    return llm_model
 
 def retrieve_documents_dynamic(input_data):
     """Retrieves document chunks using the hybrid search, dynamically passing filters."""
@@ -94,7 +100,7 @@ def build_rag_chain():
     })
     
     # 2. Assemble RAG pipeline
-    chain = pipeline_inputs | RAG_PROMPT | llm_model | StrOutputParser()
+    chain = pipeline_inputs | RAG_PROMPT | get_llm() | StrOutputParser()
     print("[CHAIN] LCEL RAG pipeline assembled successfully.")
     return chain
 

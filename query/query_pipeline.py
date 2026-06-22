@@ -1,10 +1,26 @@
 import logging
-from chains.rag_chain import build_rag_chain
 
 logger = logging.getLogger(__name__)
 
-print("[QUERY] Initializing Query Pipeline Chain...")
-chain = build_rag_chain()
+_chain = None
+
+def get_chain():
+    """
+    Returns the RAG chain.
+    Instantiated lazily to avoid memory overhead on startup.
+    """
+    global _chain
+    if _chain is None:
+        print("[QUERY] Lazily initializing RAG Chain...")
+        logger.info("Lazily building RAG chain.")
+        try:
+            from chains.rag_chain import build_rag_chain
+            _chain = build_rag_chain()
+            logger.info("RAG chain built successfully.")
+        except Exception as e:
+            logger.error(f"Failed to build RAG chain: {e}", exc_info=True)
+            raise e
+    return _chain
 
 def ask_question(question):
     """
@@ -16,6 +32,7 @@ def ask_question(question):
     print(f"\n[QUERY] Submitting query to RAG chain...")
     logger.info(f"Query pipeline received query: {question}")
     try:
+        chain = get_chain()
         response = chain.stream(question)
         return response
     except Exception as e:
@@ -24,4 +41,4 @@ def ask_question(question):
         # Yield a clean error fallback
         def error_generator():
             yield f"[QUERY PIPELINE ERROR: {e}]"
-        return error_generator()
+        return error_generator()
